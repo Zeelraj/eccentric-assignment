@@ -284,7 +284,6 @@ exports.authenticateUser = async (req, res) => {
  * Response
  * @returns success (boolean): Process is successfully executed or not
  * @returns message (string): Message to be displayed to the user
- * @returns error (string)?: Error Message for the developer
  *
  */
 exports.passwordReset = async (req, res) => {

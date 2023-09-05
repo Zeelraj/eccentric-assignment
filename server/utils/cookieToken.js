@@ -13,7 +13,6 @@ const { AUTH_TYPES } = require("./constants");
  * Response
  * @returns success (boolean): Process is successfully executed or not
  * @returns message (string): Message to be displayed to the user
- * @returns error (string)?: Error Message for the developer
  * @returns isNewUser (boolean): Indicates that current user is new user or not.
  * @returns isVerified (boolean): Indicates that current user's email and contact are verified or not.
  * @returns isAuthenticated (boolean): Indicates that current user is authenticated or not.
