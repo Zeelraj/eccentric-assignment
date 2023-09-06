@@ -23,17 +23,17 @@ const loggerFormatMethodName = format(function (info) {
 
 const loggerTransports = [
   new transports.Console(),
-  new transports.DailyRotateFile({
-    filename: "logs/[%DATE%] - all logs.log",
-    datePattern: "DD-MM-YYYY",
-    //   maxFiles: "60d", // NOTE Files available for this many days
-  }),
-  new transports.DailyRotateFile({
-    filename: "logs/[%DATE%] - error logs.log",
-    level: "error",
-    datePattern: "DD-MM-YYYY",
-    //   maxFiles: "60d", // NOTE Files available for this many days
-  }),
+  // new transports.DailyRotateFile({
+  //   filename: "logs/[%DATE%] - all logs.log",
+  //   datePattern: "DD-MM-YYYY",
+  //   //   maxFiles: "60d", // NOTE Files available for this many days
+  // }),
+  // new transports.DailyRotateFile({
+  //   filename: "logs/[%DATE%] - error logs.log",
+  //   level: "error",
+  //   datePattern: "DD-MM-YYYY",
+  //   //   maxFiles: "60d", // NOTE Files available for this many days
+  // }),
 ];
 
 const AuthLogger = createLogger({
