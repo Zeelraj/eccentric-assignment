@@ -1,0 +1,30 @@
+{
+  "name": "server",
+  "version": "1.0.0",
+  "description": "This is the code of the server of the Schedular App as an assignment for the NodeJS developer role at Eccentric Engine",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js"
+  },
+  "keywords": [
+    "Schedular",
+    "Meeting",
+    "Eccentric",
+    "Eccentric Engine"
+  ],
+  "author": "Zeelrajsinh Mahida",
+  "license": "ISC",
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "cookie-parser": "^1.4.6",
+    "dotenv": "^10.0.0",
+    "express": "^4.17.3",
+    "jsonwebtoken": "^9.0.0",
+    "mongoose": "^6.1.0",
+    "nanoid": "^3.1.30",
+    "validator": "^13.7.0",
+    "winston": "^3.10.0",
+    "winston-daily-rotate-file": "^4.7.1"
+  }
+}
