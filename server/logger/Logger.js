@@ -60,6 +60,18 @@ const UserLogger = createLogger({
 });
 exports.UserLogger = UserLogger;
 
+const MeetingLogger = createLogger({
+  level: process.env.LOG_LEVEL || "info",
+  format: combine(
+    label({ label: "Meeting" }),
+    loggerTimestampFormat,
+    loggerFormatMethodName,
+    customFormat
+  ),
+  transports: loggerTransports,
+});
+exports.MeetingLogger = MeetingLogger;
+
 const Logger = createLogger({
   level: process.env.LOG_LEVEL || "info",
   format: combine(

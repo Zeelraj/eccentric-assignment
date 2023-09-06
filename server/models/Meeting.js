@@ -1,7 +1,7 @@
 const mongoose = require("mongoose");
 
 const MeetingSchema = new mongoose.Schema({
-  user: {
+  host: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "users",
     required: [true, "Please, provide User Id of the guest"],
@@ -35,6 +35,31 @@ const MeetingSchema = new mongoose.Schema({
   }, // NOTE Guest accepted meeting invitation or not (default: false)
   guestAcceptedAt: {
     type: Date,
+  },
+  guestRejectedAt: {
+    type: Date,
+  },
+  isGuestReviewed: {
+    type: Boolean,
+    default: false,
+  }, // NOTE Guest reviewed meeting invitation or not (default: false)
+  guestReviewedAt: {
+    type: Date,
+  },
+  isReviewRequestSent: {
+    type: Boolean,
+    default: false,
+  }, // NOTE Request for the meeting is sent or not to the guest
+  reviewRequestSentAt: {
+    type: Date,
+  },
+  totalReviewRequests: {
+    type: Number,
+    default: 0,
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now,
   },
   lastUpdatedAt: {
     type: Date,

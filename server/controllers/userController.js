@@ -102,8 +102,6 @@ exports.updateUser = async (req, res) => {
     blockedTimeSlots?.length > 0 ? blockedTimeSlots : user?.blockedTimeSlots;
   user.lastUserUpdated = new Date();
 
-  console.log("user.blockedTimeSlots: ", user.blockedTimeSlots);
-
   try {
     await user.save();
   } catch (error) {

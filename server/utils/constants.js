@@ -9,3 +9,8 @@ exports.RECOVERY_QUESTIONS = [
   { id: "ETwvbtBHAFrCuDJA4jkAJ", question: "Which was your first school?" },
   { id: "FSZnwVUGkAbQO1ojXdcMP", question: "What was your first job?" },
 ];
+
+exports.INVITATION_STATUS = {
+  ACCEPTED: "Accepted",
+  REJECT: "Reject",
+};
