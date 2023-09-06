@@ -12,7 +12,6 @@ const { AUTH_TYPES } = require("../utils/constants");
  * Request Body
  * @param name (string): User Name
  * @param email (string): User Email. It must be unique.
- * @param contact (string): User Contact. It must be unique.
  * @param password (string): Password of the User
  * @param cnfPassword (string): Confirm Password of the User
  * @param passwordRecovery (object): Details about the password recovery
@@ -27,7 +26,6 @@ exports.registerUser = async (req, res) => {
   const requiredFields = [
     "name",
     "email",
-    "contact",
     "password",
     "cnfPassword",
     "passwordRecovery",
@@ -62,8 +60,7 @@ exports.registerUser = async (req, res) => {
     });
   }
 
-  const { name, email, contact, password, cnfPassword, passwordRecovery } =
-    req.body;
+  const { name, email, password, cnfPassword, passwordRecovery } = req.body;
 
   if (String(password).length < 8) {
     AuthLogger.error("Password length is not valid");
@@ -89,15 +86,8 @@ exports.registerUser = async (req, res) => {
     });
   }
 
-  if (!isValidContact(contact)) {
-    AuthLogger.error("Contact format is not valid");
-    return res.status(203).json({
-      success: false,
-      message: "Contact format is not valid",
-    });
-  }
-
-  const isUserWithEmailExists = (await User.find({ email })).length > 0;
+  const isUserWithEmailExists =
+    (await User.find({ email, isDeleted: false })).length > 0;
 
   if (isUserWithEmailExists) {
     AuthLogger.error(`User already exists with email: ${email}`);
@@ -107,20 +97,9 @@ exports.registerUser = async (req, res) => {
     });
   }
 
-  const isUserWithContactExists = (await User.find({ contact })).length > 0;
-
-  if (isUserWithContactExists) {
-    AuthLogger.error(`User already exists with contact: ${contact}`);
-    return res.status(203).json({
-      success: false,
-      message: "User with contact already exists",
-    });
-  }
-
   const user = new User({
     name,
     email,
-    contact,
     password: await bcrypt.hash(password, 10),
     passwordRecovery,
   });
@@ -175,7 +154,9 @@ exports.loginUser = async (req, res) => {
   const { email, password } = req.body;
 
   // Fetch user
-  const user = await User.findOne({ email });
+  const user = await User.findOne({ email, isDeleted: false }).select(
+    "+password"
+  );
 
   // If user not found in DB
   if (!user) {
@@ -283,6 +264,7 @@ exports.authenticateUser = async (req, res) => {
  *
  * Response
  * @returns success (boolean): Process is successfully executed or not
+ * @returns isLoggedOut (boolean): Indicates that user is logged out or not
  * @returns message (string): Message to be displayed to the user
  *
  */
@@ -309,7 +291,9 @@ exports.passwordReset = async (req, res) => {
 
   const { email, answer, password, cnfPassword } = req.body;
 
-  const user = await User.findOne({ email });
+  const user = await User.findOne({ email, isDeleted: false })
+    .select("+password")
+    .select("+passwordRecovery");
 
   if (!user) {
     AuthLogger.error("User does not exists");

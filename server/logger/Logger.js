@@ -48,6 +48,18 @@ const AuthLogger = createLogger({
 });
 exports.AuthLogger = AuthLogger;
 
+const UserLogger = createLogger({
+  level: process.env.LOG_LEVEL || "info",
+  format: combine(
+    label({ label: "User" }),
+    loggerTimestampFormat,
+    loggerFormatMethodName,
+    customFormat
+  ),
+  transports: loggerTransports,
+});
+exports.UserLogger = UserLogger;
+
 const Logger = createLogger({
   level: process.env.LOG_LEVEL || "info",
   format: combine(

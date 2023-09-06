@@ -37,9 +37,11 @@ app.use(function (req, res, next) {
 
 // import all routes here
 const auth = require("./routes/auth");
+const user = require("./routes/user");
 
 // router middleware
 app.use("/api", auth);
+app.use("/api", user);
 
 app.get("/api", async (req, res) => {
   res.status(200).json({

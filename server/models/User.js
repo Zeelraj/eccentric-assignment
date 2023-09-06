@@ -3,6 +3,38 @@ const validator = require("validator");
 const bcrypt = require("bcryptjs");
 const { signJwtToken } = require("../utils/utils");
 
+/**
+ *
+ * NOTE
+ * Blocked Time slots will be of 1 hour, only.
+ * User can select as many slots of 1 hour as s/he wants.
+ * Hours will be stored in 24 hours format, but will be displayed in 12 hours format.
+ *
+ */
+const BlockedTimeSlot = new mongoose.Schema({
+  time: {
+    start: {
+      type: String,
+      required: [true, "Please, provide start time of the blocked slot"],
+    },
+    end: {
+      type: String,
+      required: [true, "Please, provide end time of the blocked slot"],
+    },
+  },
+});
+
+const PasswordRecoverySchema = new mongoose.Schema({
+  question: {
+    type: String,
+    required: [true, "Please, provide password recovery question's Id"],
+  },
+  answer: {
+    type: String,
+    required: [true, "Please, provide password recovery question's answer"],
+  },
+});
+
 const UserSchema = new mongoose.Schema({
   name: {
     type: String,
@@ -15,26 +47,20 @@ const UserSchema = new mongoose.Schema({
     validate: [validator.isEmail, "Please, enter email in correct format"],
     unique: true,
   },
-  contact: {
-    type: String,
-    required: [true, "Please provide a contact"],
-    maxLength: [10, "Contact must be of 10 characters only"],
-    unique: true,
-  },
   password: {
     type: String,
     required: [true, "Please provide a password"],
+    select: false, // NOTE Password will not be fetched until explicitly fetched
   },
   passwordRecovery: {
-    question: {
-      type: String,
-      required: [true, "Please, provide password recovery question's Id"],
-    },
-    answer: {
-      type: String,
-      required: [true, "Please, provide password recovery question's answer"],
-    },
+    type: PasswordRecoverySchema,
+    select: false,
   },
+  blockedTimeSlots: [
+    {
+      type: BlockedTimeSlot,
+    },
+  ],
   createdAt: {
     type: Date,
     default: Date.now,
