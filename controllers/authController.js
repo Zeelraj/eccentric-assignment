@@ -291,9 +291,9 @@ exports.passwordReset = async (req, res) => {
 
   const { email, answer, password, cnfPassword } = req.body;
 
-  const user = await User.findOne({ email, isDeleted: false })
-    .select("+password")
-    .select("+passwordRecovery");
+  const user = await User.findOne({ email, isDeleted: false }).select(
+    "+password"
+  );
 
   if (!user) {
     AuthLogger.error("User does not exists");

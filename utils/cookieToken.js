@@ -42,7 +42,7 @@ const cookieToken = async (user, res, type = AUTH_TYPES.LOGIN) => {
   };
 
   user.password = undefined;
-  user.passwordRecovery = undefined;
+  user.passwordRecovery.answer = undefined;
 
   AuthLogger.info(
     `${user?._id} is ${

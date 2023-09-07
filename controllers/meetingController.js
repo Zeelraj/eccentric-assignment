@@ -2,7 +2,66 @@ const { MeetingLogger } = require("../logger/Logger");
 const Meeting = require("../models/Meeting");
 const User = require("../models/User");
 const { INVITATION_STATUS } = require("../utils/constants");
-const { isJSONEmpty } = require("../utils/utils");
+const { isJSONEmpty, padTo2Digits } = require("../utils/utils");
+
+const isBlockedTimeSlot = (blockedTimeSlot, time) => {
+  const date1 = new Date(time.end);
+  const date2 = new Date(time.start);
+
+  const day1 = `${padTo2Digits(date1.getFullYear())}-${padTo2Digits(
+    date1.getMonth() + 1
+  )}-${padTo2Digits(date1.getDate())}`;
+  const day2 = `${padTo2Digits(date2.getFullYear())}-${padTo2Digits(
+    date2.getMonth() + 1
+  )}-${padTo2Digits(date2.getDate())}`;
+
+  const blockedStartTime = `${day1}T${blockedTimeSlot.time.start}`;
+  const blockedEndTime = `${day2}T${blockedTimeSlot.time.end}`;
+
+  return blockedStartTime < time.end && blockedEndTime > time.start;
+};
+
+const isUserAvailableForMeeting = async (meeting, user) => {
+  // Fetch all meetings
+  const meetings = await Meeting.find({
+    $and: [
+      {
+        isDeleted: false,
+        isCancelled: false,
+        isGuestReviewed: true,
+        isGuestAccepted: true,
+      },
+      {
+        $or: [{ host: user?._id }, { guest: user?._id }],
+      },
+    ],
+  });
+
+  // Time slot is available or not
+  const isMeetingSlotAvailable =
+    meetings.filter((_meeting) => {
+      return (
+        _meeting.time.start < meeting.time.end &&
+        _meeting.time.end > meeting.time.start
+      );
+    }).length <= 0;
+
+  const isMeetingSlotAvailableFromBlockedSlots =
+    user?.blockedTimeSlots?.length > 0
+      ? user?.blockedTimeSlots?.filter((blockedTimeSlot) => {
+          return isBlockedTimeSlot(blockedTimeSlot, meeting.time);
+        })?.length <= 0
+      : true;
+
+  if (!isMeetingSlotAvailable || !isMeetingSlotAvailableFromBlockedSlots) {
+    MeetingLogger.error(
+      `${user?._id} is not available for the selected time slot.`
+    );
+    return false;
+  }
+
+  return true;
+};
 
 /**
  *
@@ -51,40 +110,6 @@ exports.createMeeting = async (req, res) => {
     isDeleted: false,
   });
 
-  // Fetch all meetings
-  const meetings = await Meeting.find({
-    $and: [
-      { isDeleted: false, isCancelled: false, isGuestAccepted: true },
-      {
-        $or: [{ host: guest?._id }, { guest: guest?._id }],
-      },
-    ],
-  });
-
-  // Time slot is available or not
-  const isMeetingSlotAvailable =
-    meetings.filter((meeting) => {
-      return meeting.time.start < time.end && meeting.time.end > time.start;
-    }).length <= 0;
-
-  const isMeetingSlotAvailableFromBlockedSlots =
-    guest.blockedTimeSlots.filter((blockedTimeSlot) => {
-      return (
-        blockedTimeSlot.time.start < time.end &&
-        blockedTimeSlot.time.end > time.start
-      );
-    }).length <= 0;
-
-  if (!isMeetingSlotAvailable || !isMeetingSlotAvailableFromBlockedSlots) {
-    MeetingLogger.error(
-      `Guest ${guest?._id} is not available for the selected time slot.`
-    );
-    return res.status(400).json({
-      success: false,
-      message: "Guest is not available for the selected time slot",
-    });
-  }
-
   const meeting = new Meeting({
     host: req?.user?._id,
     title,
@@ -93,7 +118,25 @@ exports.createMeeting = async (req, res) => {
     guest: guest._id,
   });
 
-  // Send Email Code Here
+  if (!(await isUserAvailableForMeeting(meeting, req?.user))) {
+    MeetingLogger.error(
+      `Host ${req?.user?._id} is not available for the selected time slot.`
+    );
+    return res.status(400).json({
+      success: false,
+      message: "You are not available for the selected time slot",
+    });
+  }
+
+  if (!(await isUserAvailableForMeeting(meeting, guest))) {
+    MeetingLogger.error(
+      `Guest ${guest?._id} is not available for the selected time slot.`
+    );
+    return res.status(400).json({
+      success: false,
+      message: "Guest is not available for the selected time slot",
+    });
+  }
 
   meeting.isReviewRequestSent = true;
   meeting.reviewRequestSentAt = new Date();
@@ -144,7 +187,9 @@ exports.getMeeting = async (req, res) => {
   }
 
   // Fetch meeting
-  const meeting = await Meeting.findOne({ _id: meetingId, isDeleted: false });
+  const meeting = await Meeting.findOne({ _id: meetingId, isDeleted: false })
+    .populate("host")
+    .populate("guest");
 
   // If meeting not found in DB
   if (!meeting) {
@@ -197,7 +242,9 @@ exports.getAllMeetings = async (req, res) => {
         $or: [{ host: userId }, { guest: userId }],
       },
     ],
-  });
+  })
+    .populate("host")
+    .populate("guest");
 
   MeetingLogger.info(
     `All meetings are fetched successfully by ${req?.user?._id}`
@@ -268,45 +315,34 @@ exports.updateMeeting = async (req, res) => {
 
   // If time slot is updated
   if (!isJSONEmpty(time)) {
-    // Fetch all meetings
-    const meetings = await Meeting.find({
-      $and: [
-        { isDeleted: false, isCancelled: false },
-        {
-          $or: [{ host: meeting?.guest?._id }, { guest: meeting?.guest?._id }],
-        },
-      ],
-    });
+    meeting.time = !isJSONEmpty(time) ? time : meeting?.time;
 
-    // Time slot is available or not
-    const isMeetingSlotAvailable =
-      meetings.filter((meeting) => {
-        return meeting.time.start < time.end && meeting.time.end > time.start;
-      }).length <= 0;
+    if (!(await isUserAvailableForMeeting(meeting, meeting?.host))) {
+      MeetingLogger.error(
+        `Host ${meeting?.host?._id} is not available for the selected time slot.`
+      );
+      return res.status(400).json({
+        success: false,
+        message: `${
+          req.user._id === meeting?.host?._id ? "You are" : "Host is"
+        } not available for the selected time slot.`,
+      });
+    }
 
-    const isMeetingSlotAvailableFromBlockedSlots =
-      guest.blockedTimeSlots.filter((blockedTimeSlot) => {
-        return (
-          blockedTimeSlot.time.start < time.end &&
-          blockedTimeSlot.time.end > time.start
-        );
-      }).length <= 0;
-
-    if (!isMeetingSlotAvailable || !isMeetingSlotAvailableFromBlockedSlots) {
+    if (!(await isUserAvailableForMeeting(meeting, meeting.guest))) {
       MeetingLogger.error(
         `Guest ${meeting?.guest?._id} is not available for the selected time slot.`
       );
       return res.status(400).json({
         success: false,
-        message: "Guest is not available for the selected time slot",
+        message: `${
+          req.user._id === meeting?.guest?._id ? "You are" : "Guest is"
+        } not available for the selected time slot.`,
       });
     }
 
-    meeting.time = !isJSONEmpty(time) ? time : meeting?.time;
     meeting.isGuestAccepted = false;
     meeting.isGuestReviewed = false;
-
-    // Send Email Code Here
 
     meeting.isReviewRequestSent = true;
     meeting.reviewRequestSentAt = new Date();
@@ -506,7 +542,9 @@ exports.updateMeetingInvitationStatus = async (req, res) => {
   const meeting = await Meeting.findOne({
     _id: meetingId,
     isDeleted: false,
-  }).populate("guest");
+  })
+    .populate("host")
+    .populate("guest");
 
   // If meeting not found in DB
   if (!meeting) {
@@ -548,48 +586,39 @@ exports.updateMeetingInvitationStatus = async (req, res) => {
     });
   }
 
+  let isHostAvailable = true;
+  let isGuestAvailable = true;
+
   const acceptInvitation = async () => {
-    // Fetch all meetings
-    const meetings = await Meeting.find({
-      $and: [
-        { isDeleted: false, isCancelled: false },
-        {
-          $or: [{ host: meeting?.guest?._id }, { guest: meeting?.guest?._id }],
-        },
-      ],
-    });
-
-    // Time slot is available or not
-    const isMeetingSlotAvailable =
-      meetings.filter((_meeting) => {
-        return (
-          _meeting.time.start < meeting.time.end &&
-          _meeting.time.end > meeting.time.start
-        );
-      }).length <= 0;
-
-    const isMeetingSlotAvailableFromBlockedSlots =
-      guest.blockedTimeSlots.filter((blockedTimeSlot) => {
-        return (
-          blockedTimeSlot.time.start < meeting.time.end &&
-          blockedTimeSlot.time.end > meeting.time.start
-        );
-      }).length <= 0;
-
-    if (!isMeetingSlotAvailable || !isMeetingSlotAvailableFromBlockedSlots) {
+    if (!(await isUserAvailableForMeeting(meeting, meeting?.host))) {
       MeetingLogger.error(
-        `${meeting?.guest?._id} is not available for the selected time slot.`
+        `Host ${meeting?.host?._id} is not available for the selected time slot.`
       );
-      return res.status(400).json({
-        success: false,
-        message: "You are not available for the selected time slot",
-      });
+      isHostAvailable = false;
+      meeting.isGuestAccepted = false;
+      meeting.guestRejectedAt = new Date();
+      meeting.isGuestReviewed = true;
+      meeting.guestReviewedAt = new Date();
+      return;
+    }
+
+    if (!(await isUserAvailableForMeeting(meeting, meeting.guest))) {
+      MeetingLogger.error(
+        `Host ${meeting?.guest?._id} is not available for the selected time slot.`
+      );
+      isGuestAvailable = false;
+      meeting.isGuestAccepted = false;
+      meeting.guestRejectedAt = new Date();
+      meeting.isGuestReviewed = true;
+      meeting.guestReviewedAt = new Date();
+      return;
     }
 
     meeting.isGuestAccepted = true;
     meeting.guestAcceptedAt = new Date();
     meeting.isGuestReviewed = true;
     meeting.guestReviewedAt = new Date();
+    return;
   };
 
   const rejectInvitation = async () => {
@@ -599,14 +628,12 @@ exports.updateMeetingInvitationStatus = async (req, res) => {
     meeting.guestReviewedAt = new Date();
   };
 
-  switch (status) {
-    case INVITATION_STATUS.ACCEPTED:
-      acceptInvitation();
-      break;
+  if (status === INVITATION_STATUS.ACCEPTED) {
+    await acceptInvitation();
+  }
 
-    case INVITATION_STATUS.REJECT:
-      rejectInvitation();
-      break;
+  if (status === INVITATION_STATUS.REJECT) {
+    await rejectInvitation();
   }
 
   try {
@@ -619,10 +646,22 @@ exports.updateMeetingInvitationStatus = async (req, res) => {
     });
   }
 
-  MeetingLogger.info(`${meeting._id} is ${status} by ${req?.user?._id}`);
+  MeetingLogger.info(
+    `${meeting._id} is ${
+      isHostAvailable && isGuestAvailable
+        ? INVITATION_STATUS.ACCEPTED
+        : INVITATION_STATUS.REJECT
+    } by ${req?.user?._id}`
+  );
   res.status(200).json({
     success: true,
-    message: `Meeting is ${status}`,
+    message: `Meeting is ${
+      isHostAvailable && isGuestAvailable
+        ? INVITATION_STATUS.ACCEPTED
+        : INVITATION_STATUS.REJECT
+    }.${!isHostAvailable ? " Host is not available." : ""}${
+      !isGuestAvailable ? " Guest is not available." : ""
+    }`,
     meeting,
   });
 };

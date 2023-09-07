@@ -49,3 +49,7 @@ exports.signJwtToken = async (payload, expiry = process.env.JWT_EXPIRY) => {
     expiresIn: expiry,
   });
 };
+
+exports.padTo2Digits = (num) => {
+  return String(num).padStart(2, "0");
+};
