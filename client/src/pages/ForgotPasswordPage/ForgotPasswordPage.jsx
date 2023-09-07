@@ -1,7 +1,8 @@
 import React from "react";
+import UpdatePassword from "../../components/UpdatePassword/UpdatePassword";
 
 const ForgotPasswordPage = () => {
-  return <div>ForgotPasswordPage</div>;
+  return <UpdatePassword />;
 };
 
 export default ForgotPasswordPage;
