@@ -54,7 +54,6 @@ const UserSchema = new mongoose.Schema({
   },
   passwordRecovery: {
     type: PasswordRecoverySchema,
-    select: false,
   },
   blockedTimeSlots: [BlockedTimeSlot],
   createdAt: {

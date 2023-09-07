@@ -62,7 +62,7 @@ exports.isUserLoggedIn = async (req, res, next) => {
   }
 
   user.password = undefined;
-  user.passwordRecovery = undefined;
+  user.passwordRecovery.answer = undefined;
 
   req.user = user;
 
