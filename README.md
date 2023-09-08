@@ -4,7 +4,7 @@ This is the coding round assignment for the NodeJS developer role at Eccentric E
 
 ## Client
 
-Visit [Demo](https://brilliant-moonbeam-1c0166.netlify.app).
+Visit [Demo](https://schedularapp.netlify.app).
 
 ### Schedule Calendar
 
@@ -43,7 +43,249 @@ Visit [Demo](https://brilliant-moonbeam-1c0166.netlify.app).
 
 ## Server
 
-Visit Backend Server [Server](https://tiny-tan-sea-urchin-tux.cyclic.app/api).
+Visit [Backend Server](https://tiny-tan-sea-urchin-tux.cyclic.app/api).
+
+### Auth APIs
+
+- This APIs manages the authentication and authorization of the app
+
+#### APIS
+
+- /v1/auth/register
+
+  - Sign up user
+
+    ```js
+    method = POST;
+
+    payload = {
+      name: String,
+      email: String,
+      password: String,
+      cnfPassword: String,
+      passwordRecovery: {
+        question: String,
+        answer: String,
+      },
+    };
+    ```
+
+- /v1/auth/login
+
+  - Sing in user
+
+    ```js
+    Method = POST;
+
+    payload = {
+      email: String,
+      password: String,
+    };
+    ```
+
+- /v1/auth/logout
+
+  - Logs out user
+
+    ```js
+    Method = GET;
+    ```
+
+- /v1/auth/authenticate
+
+  - Authenticates logged in user
+
+    ```js
+    Method = GET;
+    ```
+
+- /v1/auth/password/reset
+
+  - Update user password
+
+    ```js
+    Method = PUT;
+
+    payload = {
+      email: String,
+      answer: String,
+      password: String,
+      cnfPassword: String,
+    };
+    ```
+
+### User APIs
+
+- This APIs manages the user related operations
+
+#### APIS
+
+- /v1/user
+
+  - Fetch user details
+
+    ```js
+    Method = PUT;
+
+    params = {
+      userId: String,
+    };
+    ```
+
+- /v1/users
+
+  - List of all the users
+
+  ```js
+  Method = GET;
+  ```
+
+- /v1/user/update
+
+  - Update logged in user's details
+
+    ```js
+    Method = PUT;
+
+    payload = {
+      name: String,
+      blockedTimeSlots: {
+        time: {
+          start: String,
+          end: String,
+        },
+      },
+    };
+    ```
+
+- /v1/user/deactivate
+
+  - Deactivate's logged in user
+
+  ```js
+  Method = DELETE;
+  ```
+
+- /v1/user/delete
+
+  - Delete's logged in user
+
+  ```js
+  Method = DELETE;
+  ```
+
+### Meeting APIs
+
+- This APIs manages the meeting and invitation related operations
+
+#### APIS
+
+- /v1/meeting/create
+
+  - Create's new meeting for logged in user
+  - Method: POST
+
+    ```js
+    payload = {
+      title: String,
+      agenda: String,
+      time: {
+        start: String,
+        end: String,
+      },
+      guest: ObjectId,
+    };
+    ```
+
+- /v1/meeting
+
+  - Fetch meeting details
+
+    ```js
+    Method = GET;
+
+    params = {
+      meetingId: String,
+    };
+    ```
+
+- /v1/meetings
+
+  - List of all the meetings of the user
+
+    ```js
+    Method = GET
+
+    params = {
+        userId: String;
+    }
+    ```
+
+- /v1/meeting/update
+
+  - Update meeting's details.
+
+    - If time slot is updated then guest will be sent invitation again and s/he have to accept it again for th updated time.
+
+    ```js
+    Method = PUT
+
+    params = {
+        meetingId: String,
+    };
+
+    payload = {
+        title?: String,
+        agenda?: String,
+        time?: {
+            start: String,
+            end: String,
+        },
+    };
+    ```
+
+- /v1/meeting/cancel
+
+  - Cancel's meeting
+
+    ```js
+    Method = DELETE
+
+    params = {
+        meetingId: String;
+    }
+    ```
+
+- /v1/meeting/delete
+
+  - Delete's meeting
+
+  ```js
+    Method = DELETE
+
+    params = {
+        meetingId: String;
+    }
+  ```
+
+- /v1/meeting/invitation/update-status
+
+  - Update meeting's invitation.
+
+    - Guest can accept or reject the meeting invitation.
+    - If user will not be available for the selected time slot then invitation will be automatically rejected.
+
+    ```js
+    Method = PUT;
+
+    params = {
+      meetingId: String,
+    };
+
+    payload = {
+      status: String,
+    };
+    ```
 
 ## Demo Users
 
