@@ -295,6 +295,19 @@ exports.updateMeeting = async (req, res) => {
     isDeleted: false,
   }).populate("guest");
 
+  // If host or guest is accessing this function or not
+  if (
+    ![String(meeting?.host), String(meeting?.guest?._id)].includes(
+      req?.user?._id
+    )
+  ) {
+    MeetingLogger.error("You are not authorized to access this route");
+    return res.status(401).json({
+      success: false,
+      message: "You are not authorized to access this route",
+    });
+  }
+
   // If meeting not found in DB
   if (!meeting) {
     MeetingLogger.error(`No meeting is found with meetingId: ${meetingId}`);
@@ -401,6 +414,17 @@ exports.cancelMeeting = async (req, res) => {
   // Fetch meeting
   const meeting = await Meeting.findOne({ _id: meetingId, isDeleted: false });
 
+  // If host or guest is accessing this function or not
+  if (
+    ![String(meeting?.host), String(meeting?.guest)].includes(req?.user?._id)
+  ) {
+    MeetingLogger.error("You are not authorized to access this route");
+    return res.status(401).json({
+      success: false,
+      message: "You are not authorized to access this route",
+    });
+  }
+
   // If meeting not found in DB
   if (!meeting) {
     MeetingLogger.error(`No meeting is found with meetingId: ${meetingId}`);
@@ -468,6 +492,17 @@ exports.deleteMeeting = async (req, res) => {
 
   // Fetch meeting
   const meeting = await Meeting.findOne({ _id: meetingId, isDeleted: false });
+
+  // If host or guest is accessing this function or not
+  if (
+    ![String(meeting?.host), String(meeting?.guest)].includes(req?.user?._id)
+  ) {
+    MeetingLogger.error("You are not authorized to access this route");
+    return res.status(401).json({
+      success: false,
+      message: "You are not authorized to access this route",
+    });
+  }
 
   // If meeting not found in DB
   if (!meeting) {
@@ -545,6 +580,19 @@ exports.updateMeetingInvitationStatus = async (req, res) => {
   })
     .populate("host")
     .populate("guest");
+
+  // If host or guest is accessing this function or not
+  if (
+    ![String(meeting?.host?._id), String(meeting?.guest?._id)].includes(
+      req?.user?._id
+    )
+  ) {
+    MeetingLogger.error("You are not authorized to access this route");
+    return res.status(401).json({
+      success: false,
+      message: "You are not authorized to access this route",
+    });
+  }
 
   // If meeting not found in DB
   if (!meeting) {
