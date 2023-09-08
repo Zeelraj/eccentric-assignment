@@ -1,6 +1,6 @@
 # Schedular App
 
-Visit Demo [Demo Link](https://brilliant-moonbeam-1c0166.netlify.app).
+Visit Demo [Demo Link](https://schedularapp.netlify.app).
 
 ## About
 
