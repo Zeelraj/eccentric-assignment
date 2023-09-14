@@ -602,7 +602,7 @@ exports.updateMeetingInvitationStatus = async (req, res) => {
   // If host or guest is accessing this function or not
   if (
     ![String(meeting?.host?._id), String(meeting?.guest?._id)].includes(
-      req?.user?._id
+      String(req?.user?._id)
     )
   ) {
     MeetingLogger.error("You are not authorized to access this route");
