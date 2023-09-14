@@ -53,3 +53,14 @@ exports.signJwtToken = async (payload, expiry = process.env.JWT_EXPIRY) => {
 exports.padTo2Digits = (num) => {
   return String(num).padStart(2, "0");
 };
+
+exports.compareDates = (d1, d2) => {
+  let date1 = new Date(d1).getTime();
+  let date2 = new Date(d2).getTime();
+
+  if (date1 < date2) return -1;
+
+  if (date1 > date2) return 1;
+
+  return 0;
+};
