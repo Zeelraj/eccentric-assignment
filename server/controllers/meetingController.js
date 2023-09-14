@@ -314,7 +314,7 @@ exports.updateMeeting = async (req, res) => {
   // If host or guest is accessing this function or not
   if (
     ![String(meeting?.host), String(meeting?.guest?._id)].includes(
-      req?.user?._id
+      String(req?.user?._id)
     )
   ) {
     MeetingLogger.error("You are not authorized to access this route");
@@ -434,7 +434,9 @@ exports.cancelMeeting = async (req, res) => {
 
   // If host or guest is accessing this function or not
   if (
-    ![String(meeting?.host), String(meeting?.guest)].includes(req?.user?._id)
+    ![String(meeting?.host), String(meeting?.guest)].includes(
+      String(req?.user?._id)
+    )
   ) {
     MeetingLogger.error("You are not authorized to access this route");
     return res.status(401).json({
@@ -513,7 +515,9 @@ exports.deleteMeeting = async (req, res) => {
 
   // If host or guest is accessing this function or not
   if (
-    ![String(meeting?.host), String(meeting?.guest)].includes(req?.user?._id)
+    ![String(meeting?.host), String(meeting?.guest)].includes(
+      String(req?.user?._id)
+    )
   ) {
     MeetingLogger.error("You are not authorized to access this route");
     return res.status(401).json({
@@ -602,7 +606,7 @@ exports.updateMeetingInvitationStatus = async (req, res) => {
   // If host or guest is accessing this function or not
   if (
     ![String(meeting?.host?._id), String(meeting?.guest?._id)].includes(
-      req?.user?._id
+      String(req?.user?._id)
     )
   ) {
     MeetingLogger.error("You are not authorized to access this route");
