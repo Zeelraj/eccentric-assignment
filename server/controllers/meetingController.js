@@ -2,7 +2,7 @@ const { MeetingLogger } = require("../logger/Logger");
 const Meeting = require("../models/Meeting");
 const User = require("../models/User");
 const { INVITATION_STATUS } = require("../utils/constants");
-const { isJSONEmpty, padTo2Digits } = require("../utils/utils");
+const { isJSONEmpty, padTo2Digits, compareDates } = require("../utils/utils");
 
 const isBlockedTimeSlot = (blockedTimeSlot, time) => {
   const date1 = new Date(time.end);
@@ -34,17 +34,15 @@ const isUserAvailableForMeeting = async (meeting, user) => {
       {
         $or: [{ host: user?._id }, { guest: user?._id }],
       },
+      {
+        "time.start": { $lt: meeting.time.end },
+        "time.end": { $gt: meeting.time.start },
+      },
     ],
   });
 
   // Time slot is available or not
-  const isMeetingSlotAvailable =
-    meetings.filter((_meeting) => {
-      return (
-        _meeting.time.start < meeting.time.end &&
-        _meeting.time.end > meeting.time.start
-      );
-    }).length <= 0;
+  const isMeetingSlotAvailable = meetings.length <= 0;
 
   const isMeetingSlotAvailableFromBlockedSlots =
     user?.blockedTimeSlots?.length > 0
@@ -103,6 +101,24 @@ exports.createMeeting = async (req, res) => {
   }
 
   const { title = "", agenda = "", time = {}, guest: guestId = "" } = req.body;
+
+  // Meeting cannot be scheduled in the past
+  if (compareDates(time.start, new Date()) < 0) {
+    MeetingLogger.error("Meeting cannot be set in the past time");
+    return res.status(400).json({
+      success: false,
+      message: "Meeting cannot be set in the past time",
+    });
+  }
+
+  // Meeting cannot end before it's start time
+  if (compareDates(time.start, time.end) >= 0) {
+    MeetingLogger.error("Meeting cannot end before start time");
+    return res.status(400).json({
+      success: false,
+      message: "Meeting cannot end before start time",
+    });
+  }
 
   const guest = await User.findOne({
     _id: guestId,
@@ -330,6 +346,7 @@ exports.updateMeeting = async (req, res) => {
   if (!isJSONEmpty(time)) {
     meeting.time = !isJSONEmpty(time) ? time : meeting?.time;
 
+    // Host is available or not
     if (!(await isUserAvailableForMeeting(meeting, meeting?.host))) {
       MeetingLogger.error(
         `Host ${meeting?.host?._id} is not available for the selected time slot.`
@@ -342,6 +359,7 @@ exports.updateMeeting = async (req, res) => {
       });
     }
 
+    // Guest is available or not
     if (!(await isUserAvailableForMeeting(meeting, meeting.guest))) {
       MeetingLogger.error(
         `Guest ${meeting?.guest?._id} is not available for the selected time slot.`
@@ -638,6 +656,7 @@ exports.updateMeetingInvitationStatus = async (req, res) => {
   let isGuestAvailable = true;
 
   const acceptInvitation = async () => {
+    // Host is available or not
     if (!(await isUserAvailableForMeeting(meeting, meeting?.host))) {
       MeetingLogger.error(
         `Host ${meeting?.host?._id} is not available for the selected time slot.`
@@ -650,6 +669,7 @@ exports.updateMeetingInvitationStatus = async (req, res) => {
       return;
     }
 
+    // Guest is available or not
     if (!(await isUserAvailableForMeeting(meeting, meeting.guest))) {
       MeetingLogger.error(
         `Host ${meeting?.guest?._id} is not available for the selected time slot.`
@@ -666,7 +686,6 @@ exports.updateMeetingInvitationStatus = async (req, res) => {
     meeting.guestAcceptedAt = new Date();
     meeting.isGuestReviewed = true;
     meeting.guestReviewedAt = new Date();
-    return;
   };
 
   const rejectInvitation = async () => {
